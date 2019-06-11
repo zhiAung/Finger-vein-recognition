@@ -140,6 +140,43 @@ def cal_accuracy(fe_dict, pair_list):
     return best_acc, best_th
 
 
+def cal_eer(fe_dict, pair_list):
+    '''
+    计算eer
+    '''
+    with open(pair_list, 'r') as fd:
+        pairs = fd.readlines()
+    genuine_sims = []
+    imposter_sims = []
+    for pair in pairs:
+        splits = pair.split('\t')
+        fe_1 = fe_dict[splits[0]]  # 第一张图片
+        fe_2 = fe_dict[splits[1]]  # 第二张图片
+        label = int(splits[2])  # 是否为同一张图片的标签（1，0）
+        # 计算余弦距离
+        cos_metric = np.dot(fe_1, fe_2) / (np.linalg.norm(fe_1) * np.linalg.norm(fe_2))
+        if label == 1:
+            genuine_sims.append(cos_metric)
+        elif label == 0:
+            imposter_sims.append(cos_metric)
+
+    thresld=np.arange(0, 1, 0.001)
+    FRR = []
+    FAR = []
+    eer = 1
+    eer_thresld = 0
+    for i in range(len(thresld)):        
+        frr = np.sum(genuine_sims < thresld[i]) / len(genuine_sims)
+        FRR.append(frr)
+        far = np.sum(imposter_sims >= thresld[i])/len(imposter_sims)
+        FAR.append(far)
+        if (abs(frr - far) < 0.002): #frr和far值相差很小时认为相等
+            eer = abs(frr+far)/2
+            eer_thresld = thresld[i]
+            #print('eer:{}'.format(eer))
+    return eer, eer_thresld
+
+
 def main_test(opt, model, flag = 'val'):
     '''
     主函数
@@ -165,14 +202,13 @@ def main_test(opt, model, flag = 'val'):
     # print('total time is {}, average time is {}'.format(t, t / cnt))
     # 4、计算精度及阈值
     acc, th = cal_accuracy(fe_dict, image_pairs_file)
+    eer, eer_th = cal_eer(fe_dict, image_pairs_file)
     print('verification accuracy: ', acc, 'threshold: ', th)
-    return acc, th
+    return acc, th, eer
 
 
 if __name__ == '__main__':
     opt = config.opt
-    model = load_model(opt.backbone, opt.device_ids, opt.test_model_pretrain_parameter, opt.use_se)
-    acc, th = main_test(opt, model)
-    print(acc, th)
-
+    main_test(opt,  model = null, flag = 'test' )
     print(get_img_list('/home/hza/deeplearning_project/FingerVeinRecognition/datasets/data/FV-USM/val_48'))
+    

@@ -147,7 +147,7 @@ def train_val_model(opt, model, metric_fc, criterion, optimizer, scheduler):
                 start = time.time()
         # save_model(model, opt, iters)
         model.eval()
-        epoch_test_acc, epoch_test_th = test.main_test(opt, model, flag = 'val')
+        epoch_test_acc, epoch_test_th, eer = test.main_test(opt, model, flag = 'val')
         # epoch_test_acc = test.acc
         if opt.display:
             # 每个epoch的平均损失
@@ -156,6 +156,7 @@ def train_val_model(opt, model, metric_fc, criterion, optimizer, scheduler):
             visualizer.display_current_results(i+1, epoch_total_corrects/len(train_dataset), name='train_epoch_acc')
             # 本epoch的测试集精度
             visualizer.display_current_results(i+1, epoch_test_acc, name='test_epoch_acc')
+            visualizer.display_current_results(i+1, eer, name='eer')
         if epoch_test_acc > best_acc:
             best_acc = epoch_test_acc
             best_model = model
